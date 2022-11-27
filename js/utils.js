@@ -11,4 +11,9 @@ const genderConstants = new Map([
   ['male', 5]
 ]);
 
-export { activityCoefficients, genderConstants};
+const percentageConstants = new Map([
+  ['gain', 1.15],
+  ['loss', 0.85]
+]);
+
+export { activityCoefficients, genderConstants, percentageConstants};

@@ -1,4 +1,9 @@
-import { genderConstants, activityCoefficients } from './utils.js';
+import { genderConstants, activityCoefficients, percentageConstants } from './utils.js';
+
+const WEIGHT_FORMULA_CONSTANT = 10;
+const HEIGHT_FORMULA_CONSTANT = 6.25;
+const AGE_FORMULA_CONSTANT = 5;
+const REGEX_NUMBER = /^[\s]*\d+[\s]*$/;
 
 const form = document.querySelector('.counter__form');
 const result = document.querySelector('.counter__result');
@@ -9,38 +14,46 @@ const activityMinInput = document.querySelector('#activity-minimal');
 const heightInput = form.querySelector('#height');
 const weightInput = form.querySelector('#weight');
 const ageInput = form.querySelector('#age');
-const submitButton = form.querySelector('.form__submit-button');
-const resetButton = form.querySelector('.form__reset-button');
+const buttonSubmit = form.querySelector('.form__submit-button');
+const buttonReset = form.querySelector('.form__reset-button');
 
-const regexNumber = /^[\s]*\d+[\s]*$/;
+let activityCoefficient = activityCoefficients.get('min');
 
-let activityCoefficient = 1.2;
+const disableSubmitButton = () => {
+  buttonSubmit.disabled = !(REGEX_NUMBER.test(ageInput.value) && REGEX_NUMBER.test(heightInput.value) && REGEX_NUMBER.test(weightInput.value));
+};
 
-const disableSubmitButton = () => {submitButton.disabled = !(regexNumber.test(ageInput.value) && regexNumber.test(heightInput.value)
-  && regexNumber.test(weightInput.value));};
+const disableResetButton = () => {
+  buttonReset.disabled =  (ageInput.value === '' && heightInput.value === '' && weightInput.value === '');
+};
 
-const disableResetButton = () => {resetButton.disabled =  !(regexNumber.test(ageInput.value) || regexNumber.test(heightInput.value)
-   || regexNumber.test(weightInput.value));};
+ageInput.addEventListener('keyup', () => {
+  disableSubmitButton();
+  disableResetButton();
+});
 
-ageInput.addEventListener('keyup', disableSubmitButton);
-heightInput.addEventListener('keyup', disableSubmitButton);
-weightInput.addEventListener('keyup', disableSubmitButton);
-ageInput.addEventListener('keyup', disableResetButton);
-heightInput.addEventListener('keyup', disableResetButton);
-weightInput.addEventListener('keyup', disableResetButton);
+heightInput.addEventListener('keyup', () => {
+  disableSubmitButton();
+  disableResetButton();
+});
 
-const calculate = () => {
-  const N = (10 * weightInput.value) + (6.25 * heightInput.value) - (5 * ageInput.value) + genderConstants.get(form.elements.gender.value);
+weightInput.addEventListener('keyup', () => {
+  disableSubmitButton();
+  disableResetButton();
+});
+
+const calculateCalories = () => {
+  const N = (WEIGHT_FORMULA_CONSTANT * weightInput.value) + (HEIGHT_FORMULA_CONSTANT * heightInput.value) - (AGE_FORMULA_CONSTANT * ageInput.value) + genderConstants.get(form.elements.gender.value);
   return Math.round(activityCoefficient * N);
 };
 
-submitButton.addEventListener('click', (evt) => {
+buttonSubmit.addEventListener('click', (evt) => {
   evt.preventDefault();
   result.classList.remove('counter__result--hidden');
-  const calories = calculate();
+  const calories = calculateCalories();
   resultList.querySelector('#calories-norm').textContent = calories.toString();
-  resultList.querySelector('#calories-minimal').textContent = Math.round(calories * 0.85).toString();
-  resultList.querySelector('#calories-maximal').textContent = Math.round(calories * 1.15).toString();
+  resultList.querySelector('#calories-minimal').textContent = Math.round(calories * percentageConstants.get('loss')).toString();
+  resultList.querySelector('#calories-maximal').textContent = Math.round(calories * percentageConstants.get('gain')).toString();
 });
 
 activityInputs.addEventListener('change', (evt) => {
@@ -48,17 +61,27 @@ activityInputs.addEventListener('change', (evt) => {
   activityCoefficient = activityCoefficients.get(form.elements.activity.value);
 });
 
-resetButton.addEventListener('click', () => {
+const resetInputs = () => {
   result.classList.add('counter__result--hidden');
+  // form.reset();    Uncaught TypeError: form.reset is not a function
   ageInput.value = '';
-  heightInput.value = '';
   weightInput.value = '';
-  activityCoefficient = 1.2;
-  submitButton.disabled = true;
-  resetButton.disabled = true;
+  heightInput.value = '';
+  activityCoefficient = activityCoefficients.get('min');
+  buttonSubmit.disabled = true;
+  buttonReset.disabled = true;
   genderInputMale.checked = true;
   activityInputs.querySelectorAll('input').forEach((element) => {
     element.checked = false;
   });
   activityMinInput.checked = true;
+};
+
+buttonReset.addEventListener('click', (evt) => {
+  evt.preventDefault();
+  resetInputs();
 });
+
+disableResetButton();
+disableSubmitButton();
+resetInputs();
